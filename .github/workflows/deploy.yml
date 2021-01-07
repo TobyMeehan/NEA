@@ -1,0 +1,72 @@
+name: Deploy
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  desktop:
+    strategy:
+      matrix:
+        target: [win, osx, linux]
+    
+    name: Build Desktop Application
+    
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 3.1.x
+    
+    - name: Setup Electron
+      run: dotnet tool install ElectronNET.CLI -g
+    
+    - name: Build
+      working-directory: ./Web
+      run: electronize build /target ${{ matrix.target }}
+    
+    - name: Upload Executables
+      uses: actions/upload-artifact@v2.2.2
+      with:
+        # Artifact name
+        name: ${{ matrix.target }}
+        # A file, directory or wildcard pattern that describes what to upload
+        path: ./Web/obj/desktop/${{ matrix.target }}
+
+        if-no-files-found: error
+
+        retention-days: 90
+  api:
+    
+    name: Publish API
+    
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 3.1.x
+    
+    - name: .NET Publish
+      run: dotnet publish ./Api -c Release -o ./publish/Api --verbosity normal
+    
+    - name: FTP Deploy
+      uses: sebastianpopp/ftp-action@v2.0.0
+      with:
+        # FTP host
+        host: ${{ secrets.FTP_SERVER }}
+        # FTP user
+        user: ${{ secrets.FTP_ACCOUNT_USERNAME }}
+        # FTP password
+        password: ${{ secrets.FTP_ACCOUNT_PASSWORD }}
+        # Force SSL encryption
+        forceSsl: false
+        # Local directory
+        localDir: ./publish/Api
+        # Remote directory
+        remoteDir: /api
