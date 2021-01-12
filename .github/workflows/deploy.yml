@@ -26,7 +26,7 @@ jobs:
     
     - name: Build
       working-directory: ./Web
-      run: electronize build /target ${{ matrix.target }}
+      run: electronize build /target ${{ matrix.target }} /PublishReadyToRun false
     
     - name: Upload Executables
       uses: actions/upload-artifact@v2.2.2
@@ -69,4 +69,4 @@ jobs:
         # Local directory
         localDir: ./publish/Api
         # Remote directory
-        remoteDir: /api
+        remoteDir: /nea
